@@ -10,19 +10,78 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers
+
+  const userExist = users.find(usr => usr.username === username)
+
+  if(!userExist){
+    return response.status(404).json({error: " Usuário não encontrado"})
+  }
+
+  request.user = userExist
+
+  return next()
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const {user} = request
+  const {todos} = user
+
+  const licensing = user.pro
+  const countTodo = todos.length
+
+  if(countTodo <= 9 && licensing == false){
+    return next()
+  }
+  else if (countTodo > 9 && licensing == false){
+    return response.status(403).json({error: "Limite de licença"})
+  }
+
+  return next()
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers
+  
+  const userExist = users.find(usr => usr.username === username)
+
+  if(!userExist){
+    return response.status(404).json({error: "Usuário não encontrado"})
+  }
+
+  const {id} = request.params
+  const {todos} = userExist
+
+  if(!validate(id)){
+    return response.status(400).json({error: "Id é inválido"})
+  }
+
+  const idExists = todos.find(tds => tds.id === id)
+  
+  if(!idExists){
+    return response.status(404).json({error: "Id não encontrado"})
+  }
+
+  request.user = userExist
+  request.todo = idExists
+  return next()
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const {id} = request.params
+
+  const userExistById = users.find(usr => usr.id === id)
+
+  if(!userExistById){
+    return response.status(404).json({msg: "Nenhum usuário encontrado pelo ID"})
+  }
+
+  request.user = userExistById
+  return next()
+
 }
 
 app.post('/users', (request, response) => {
@@ -74,7 +133,7 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (request, response) => {
   const { title, deadline } = request.body;
   const { user } = request;
-
+ 
   const newTodo = {
     id: uuidv4(),
     title,
